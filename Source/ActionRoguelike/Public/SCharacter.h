@@ -8,6 +8,8 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class USInteractionComponent;
+class UAnimMontage;
 
 UCLASS()
 class ACTIONROGUELIKE_API ASCharacter : public ACharacter
@@ -19,16 +21,32 @@ public:
 	ASCharacter();
 
 protected:
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	UAnimMontage* AttackAnim;
+
+	FTimerHandle TimerHandle_PrimaryAttack;
+
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComp;
 
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* SpringArmComp;
 
+	UPROPERTY(VisibleAnywhere)
+	USInteractionComponent* InteractionComp;
+	
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	void MoveForward(float Val);
+	void MoveRight(float Val);
+	void PrimaryAttack();
+	void PrimaryAttack_TimeElapsed();
+	void PrimaryInteract();	
 
 public:	
 	// Called every frame
