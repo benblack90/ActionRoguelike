@@ -2,6 +2,8 @@
 
 
 #include "SExplosiveBarrel.h"
+
+#include "SAttributeComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 
 
@@ -26,17 +28,38 @@ ASExplosiveBarrel::ASExplosiveBarrel()
 // Called when the game starts or when spawned
 void ASExplosiveBarrel::BeginPlay()
 {
-	Super::BeginPlay();
-
-	Mesh->OnComponentHit.AddDynamic(this, &ASExplosiveBarrel::Explode);
+	Super::BeginPlay();	
 	
+}
+
+void ASExplosiveBarrel::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	Mesh->OnComponentHit.AddDynamic(this, &ASExplosiveBarrel::Explode);
 }
 
 //when passing a function to a delegate, the signature has to match that of the delegate. As a result, the signature below has 5 parameters, matching what
 //OnComponentHit.AddDynamic needs
-void ASExplosiveBarrel::Explode(UPrimitiveComponent* Pc, AActor* Act, UPrimitiveComponent* Pc2, FVector incoming, const FHitResult& Hr)
+void ASExplosiveBarrel::Explode(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* otherComp, FVector Normal, const FHitResult& HitResult)
 {
 	RForceComp->FireImpulse();
+	if(OtherActor)
+	{
+		USAttributeComponent* AttComp = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass()));
+		if(AttComp)
+		{
+			AttComp->ApplyHealthChange(-35);
+		}		
+	}
+
+	//ah, macros within macros! UE_LOG is how you log to console. TEXT is a macro for writing ... well, text
+	UE_LOG(LogTemp, Log, TEXT("Barrel exploded"));
+
+	//GetNameSafe is a nice way of reading data without checking for null (in this case, getting the name). It's a dereferenced pointer, because it expects a char array
+	UE_LOG(LogTemp, Warning, TEXT("Other Actor: %s at gametime %f"), *GetNameSafe(OtherActor), GetWorld()->TimeSeconds);
+
+	FString CombinedString = FString::Printf(TEXT("Hit at location %s"), *HitResult.ImpactPoint.ToString());
+	DrawDebugString(GetWorld(), HitResult.ImpactPoint, CombinedString, nullptr, FColor::Green, 2.0f, true);
 }
 
 

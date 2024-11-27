@@ -10,6 +10,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class USInteractionComponent;
 class UAnimMontage;
+class USAttributeComponent;
 
 UCLASS()
 class ACTIONROGUELIKE_API ASCharacter : public ACharacter
@@ -22,31 +23,52 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<AActor> MagicProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
+	UPROPERTY(EditAnywhere, Category = "Teleport")
+	TSubclassOf<AActor> TeleportProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Blackhole")
+	TSubclassOf<AActor> BlackholeProjectileClass;
+
 	FTimerHandle TimerHandle_PrimaryAttack;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UCameraComponent* CameraComp;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USpringArmComponent* SpringArmComp;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USAttributeComponent* AttributeComp;
+
+	UPROPERTY(EditDefaultsOnly)
+	UParticleSystem* CastEffect;
 	
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
 
 	void MoveForward(float Val);
 	void MoveRight(float Val);
 	void PrimaryAttack();
 	void PrimaryAttack_TimeElapsed();
-	void PrimaryInteract();	
+	void Teleport();
+	void Teleport_TimeElapsed();
+	void Blackhole();
+	void Blackhole_TimeElapsed();
+	void PrimaryInteract();
+	FRotator CorrectProjectileAngle(const FVector& StartPoint) const;
+
+	UFUNCTION()
+	void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* UOwningComp, float NewHealth, float MaxHealth, float Delta);
 
 public:	
 	// Called every frame

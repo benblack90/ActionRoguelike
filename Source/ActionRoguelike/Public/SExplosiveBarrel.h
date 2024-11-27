@@ -26,10 +26,11 @@ protected:
 	URadialForceComponent* RForceComp;
 
 	UFUNCTION()
-	void Explode(UPrimitiveComponent* Pc, AActor* Act, UPrimitiveComponent* Pc2, FVector incoming, const FHitResult& Hr);
+	void Explode(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* otherComp, FVector Normal, const FHitResult& HitResult);
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
 
 
 public:	

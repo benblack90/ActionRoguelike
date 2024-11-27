@@ -4,13 +4,16 @@
 #include "SCharacter.h"
 #include "SCharacter.h"
 
+#include "BlueprintEditor.h"
 #include "DiffResults.h"
 #include "NavigationSystemTypes.h"
+#include "SAttributeComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "SInteractionComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -31,6 +34,13 @@ ASCharacter::ASCharacter()
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>("InteractionComp");
 
+	AttributeComp = CreateDefaultSubobject<USAttributeComponent>("AttributeComp");
+}
+
+void ASCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	AttributeComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 }
 
 // Called when the game starts or when spawned
@@ -40,26 +50,13 @@ void ASCharacter::BeginPlay()
 	
 }
 
+
+
+
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// -- Rotation Visualization -- //
-	const float DrawScale = 100.0f;
-	const float Thickness = 5.0f;
-
-	FVector LineStart = GetActorLocation();
-	// Offset to the right of pawn
-	LineStart += GetActorRightVector() * 100.0f;
-	// Set line end in direction of the actor's forward
-	FVector ActorDirection_LineEnd = LineStart + (GetActorForwardVector() * 100.0f);
-	// Draw Actor's Direction
-	DrawDebugDirectionalArrow(GetWorld(), LineStart, ActorDirection_LineEnd, DrawScale, FColor::Yellow, false, 0.0f, 0, Thickness);
-
-	FVector ControllerDirection_LineEnd = LineStart + (GetControlRotation().Vector() * 100.0f);
-	// Draw 'Controller' Rotation ('PlayerController' that 'possessed' this character)
-	DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDirection_LineEnd, DrawScale, FColor::Green, false, 0.0f, 0, Thickness);
 
 }
 
@@ -93,19 +90,89 @@ void ASCharacter::PrimaryAttack()
 	PlayAnimMontage(AttackAnim);
 
 	//call the attack function after a timer (see PrimaryAttack_TimeElapsed
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);	
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
 }
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-	//this is a socket defined on one of the bones in the mesh
-	FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
-	FTransform SpawnTM = FTransform(GetControlRotation(), Hand);
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+	if (ensureAlways(MagicProjectileClass))
+	{
+		//this is a socket defined on one of the bones in the mesh
+		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FRotator Rotation = CorrectProjectileAngle(Hand);
+		FTransform SpawnTM = FTransform(Rotation, Hand);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+		GetWorld()->SpawnActor<AActor>(MagicProjectileClass, SpawnTM, SpawnParams);
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(),"Muzzle_01");
+	}
 }
+
+void ASCharacter::Teleport()
+{
+	PlayAnimMontage(AttackAnim);
+
+	//call the attack function after a timer (see PrimaryAttack_TimeElapsed
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::Teleport_TimeElapsed, 0.2f);
+}
+
+void ASCharacter::Teleport_TimeElapsed()
+{
+	if (ensureAlways(TeleportProjectileClass))
+	{
+		//this is a socket defined on one of the bones in the mesh
+		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FRotator Rotation = CorrectProjectileAngle(Hand);
+		FTransform SpawnTM = FTransform(Rotation, Hand);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+		GetWorld()->SpawnActor<AActor>(TeleportProjectileClass, SpawnTM, SpawnParams);
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), "Muzzle_01");
+	}
+}
+
+void ASCharacter::Blackhole()
+{
+	PlayAnimMontage(AttackAnim);
+
+	//call the attack function after a timer (see PrimaryAttack_TimeElapsed
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::Blackhole_TimeElapsed, 0.2f);
+}
+
+void ASCharacter::Blackhole_TimeElapsed()
+{
+	if (ensureAlways(BlackholeProjectileClass))
+	{
+		//this is a socket defined on one of the bones in the mesh
+		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FRotator Rotation = CorrectProjectileAngle(Hand);
+		FTransform SpawnTM = FTransform(Rotation, Hand);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+		GetWorld()->SpawnActor<AActor>(BlackholeProjectileClass, SpawnTM, SpawnParams);
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), "Muzzle_01");
+	}
+}
+
+FRotator ASCharacter::CorrectProjectileAngle(const FVector& StartPoint) const
+{
+	FVector CamTarget = CameraComp->GetForwardVector() * 25000 + CameraComp->GetComponentLocation();
+
+	//we have to do a line trace in case the object is nearer, and need to shorten the range ... otherwise we'd always be aiming at (basically) infinity
+	FHitResult Res;
+	FCollisionQueryParams ColParams;
+	ColParams.AddIgnoredActor(this);
+	bool bHitObject = GetWorld()->LineTraceSingleByChannel(Res, CameraComp->GetComponentLocation(), CamTarget, ECC_Camera, ColParams);
+
+	//rotate the projectile's vector based on where the camera is pointing
+	FVector Target = (bHitObject) ? Res.ImpactPoint : CamTarget;
+	FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(StartPoint, Target);
+	return Rotation;
+}
+
 
 
 void ASCharacter::PrimaryInteract()
@@ -130,5 +197,18 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
+	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &ASCharacter::Teleport);
+	PlayerInputComponent->BindAction("Blackhole", IE_Pressed, this, &ASCharacter::Blackhole);
 }
 
+void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* UOwningComp, float NewHealth, float MaxHealth, float Delta)
+{
+	if(NewHealth <= 0.0f && Delta < 0.0f)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		DisableInput(PC);
+	}
+	GetMesh()->SetScalarParameterValueOnMaterials("TimeToHit", GetWorld()->TimeSeconds);
+	FVector FlashColour = (Delta > 0) ? FVector(0,1,0) : FVector(1, 0, 0);
+	GetMesh()->SetVectorParameterValueOnMaterials("FlashColour", FlashColour);
+}
