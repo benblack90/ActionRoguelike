@@ -22,6 +22,9 @@ public:
 	ASCharacter();
 
 protected:
+	UPROPERTY(VisibleAnywhere)
+	FName HandSocketName;
+
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	TSubclassOf<AActor> MagicProjectileClass;
 
@@ -55,6 +58,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
+	virtual FVector GetPawnViewLocation() const override;
 
 	void MoveForward(float Val);
 	void MoveRight(float Val);
@@ -76,5 +80,8 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(Exec)
+	void HealSelf(float Amount = 100.0f);
 
 };

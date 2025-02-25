@@ -2,9 +2,6 @@
 
 
 #include "SCharacter.h"
-#include "SCharacter.h"
-
-#include "BlueprintEditor.h"
 #include "DiffResults.h"
 #include "NavigationSystemTypes.h"
 #include "SAttributeComponent.h"
@@ -17,6 +14,7 @@
 
 // Sets default values
 ASCharacter::ASCharacter()
+	:HandSocketName("Muzzle_01")
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -41,6 +39,11 @@ void ASCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	AttributeComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+}
+
+FVector ASCharacter::GetPawnViewLocation() const
+{
+	return CameraComp->GetComponentLocation();
 }
 
 // Called when the game starts or when spawned
@@ -98,14 +101,14 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 	if (ensureAlways(MagicProjectileClass))
 	{
 		//this is a socket defined on one of the bones in the mesh
-		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FVector Hand = GetMesh()->GetSocketLocation(HandSocketName);
 		FRotator Rotation = CorrectProjectileAngle(Hand);
 		FTransform SpawnTM = FTransform(Rotation, Hand);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = this;
 		GetWorld()->SpawnActor<AActor>(MagicProjectileClass, SpawnTM, SpawnParams);
-		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(),"Muzzle_01");
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(),HandSocketName);
 	}
 }
 
@@ -122,14 +125,14 @@ void ASCharacter::Teleport_TimeElapsed()
 	if (ensureAlways(TeleportProjectileClass))
 	{
 		//this is a socket defined on one of the bones in the mesh
-		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FVector Hand = GetMesh()->GetSocketLocation(HandSocketName);
 		FRotator Rotation = CorrectProjectileAngle(Hand);
 		FTransform SpawnTM = FTransform(Rotation, Hand);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = this;
 		GetWorld()->SpawnActor<AActor>(TeleportProjectileClass, SpawnTM, SpawnParams);
-		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), "Muzzle_01");
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), HandSocketName);
 	}
 }
 
@@ -146,14 +149,14 @@ void ASCharacter::Blackhole_TimeElapsed()
 	if (ensureAlways(BlackholeProjectileClass))
 	{
 		//this is a socket defined on one of the bones in the mesh
-		FVector Hand = GetMesh()->GetSocketLocation("Muzzle_01");
+		FVector Hand = GetMesh()->GetSocketLocation(HandSocketName);
 		FRotator Rotation = CorrectProjectileAngle(Hand);
 		FTransform SpawnTM = FTransform(Rotation, Hand);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = this;
 		GetWorld()->SpawnActor<AActor>(BlackholeProjectileClass, SpawnTM, SpawnParams);
-		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), "Muzzle_01");
+		UGameplayStatics::SpawnEmitterAttached(CastEffect, GetMesh(), HandSocketName);
 	}
 }
 
@@ -212,3 +215,9 @@ void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent*
 	FVector FlashColour = (Delta > 0) ? FVector(0,1,0) : FVector(1, 0, 0);
 	GetMesh()->SetVectorParameterValueOnMaterials("FlashColour", FlashColour);
 }
+
+void ASCharacter::HealSelf(float Amount /* default = 100 */)
+{
+	AttributeComp->ApplyHealthChange(this, Amount);
+}
+

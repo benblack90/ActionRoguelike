@@ -19,7 +19,7 @@ void ASHealthPickup::Interact_Implementation(APawn* InstigatorPawn)
 			USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(InstigatorPawn->GetComponentByClass(USAttributeComponent::StaticClass()));
 			if (AttributeComp)
 			{
-				if (AttributeComp->ApplyHealthChange(HealValue))
+				if (AttributeComp->ApplyHealthChange(this, HealValue))
 				{
 					Deactivate();
 				}

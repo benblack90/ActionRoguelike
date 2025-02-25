@@ -22,7 +22,7 @@ ASProjectileBase::ASProjectileBase()
 	RootComponent = SphereComp;
 
 	EffectComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
-	EffectComp->SetupAttachment(SphereComp);
+	EffectComp->SetupAttachment(RootComponent);
 
 	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("MovementComp");
 	MovementComp->InitialSpeed = 4000.0f;
@@ -32,7 +32,7 @@ ASProjectileBase::ASProjectileBase()
 	MovementComp->ProjectileGravityScale = 0.0f;
 
 	FlightAudioComp = CreateDefaultSubobject<UAudioComponent>("FlightAudioComp");
-	FlightAudioComp->SetupAttachment(SphereComp);
+	FlightAudioComp->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned

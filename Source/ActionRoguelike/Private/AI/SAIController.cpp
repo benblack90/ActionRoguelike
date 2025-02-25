@@ -8,7 +8,11 @@
 void ASAIController::BeginPlay()
 {
 	Super::BeginPlay();
-	RunBehaviorTree(BehaviorTree);
+	if (ensureMsgf(BehaviorTree, TEXT("Please assign a behaviour tree in your ai controller")))
+	{
+		RunBehaviorTree(BehaviorTree);
+	}
+	
 
 	//APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
 	//if (ensureAlways(Player))

@@ -4,6 +4,8 @@
 #include "SInteractionComponent.h"
 #include "SGameplayInterface.h"
 
+static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("su.DebugDrawInteraction"), false, TEXT("Enable debug draw lines for interact component"), ECVF_Cheat);
+
 // Sets default values for this component's properties
 USInteractionComponent::USInteractionComponent()
 {
@@ -35,6 +37,8 @@ void USInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void USInteractionComponent::PrimaryInteract()
 {
+	bool bDebugDraw = CVarDebugDrawInteraction.GetValueOnGameThread();
+
 	//this is basically a raycast operation
 	
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -45,7 +49,7 @@ void USInteractionComponent::PrimaryInteract()
 	AActor* Owner = GetOwner();	
 	Owner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
-	FVector End = EyeLocation + (EyeRotation.Vector() * 250);
+	FVector End = EyeLocation + (EyeRotation.Vector() * 500);
 
 	//for the raycast version
 	/*FHitResult Hit;
@@ -74,11 +78,18 @@ void USInteractionComponent::PrimaryInteract()
 				
 				//each time we get a successful hit, draw a sphere, showing the swept volume at the point of impact. the '32' here is just the number of segments 
 				//used to draw the debug sphere, i.e. the level of detail
-				DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, HitColor, false, 2.0f);
+				if (bDebugDraw)
+				{
+					DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, HitColor, false, 2.0f);
+				}				
 				break;
 			}			
 		}		
-	}	
-	DrawDebugLine(GetWorld(), EyeLocation, End, HitColor, false, 2.0f, 0, 2.0f);	
+	}
+	if (bDebugDraw)
+	{
+		DrawDebugLine(GetWorld(), EyeLocation, End, HitColor, false, 2.0f, 0, 2.0f);
+	}
+	
 }
 
